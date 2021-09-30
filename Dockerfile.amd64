@@ -129,3 +129,17 @@ ENV HOME=/home/ubuntu \
     SHELL=/bin/bash
 HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://127.0.0.1:6079/api/health
 ENTRYPOINT ["/startup.sh"]
+
+
+
+################################################################################
+# Libraries for ISMR 2021 Tutorial
+################################################################################
+WORKDIR /root
+RUN mkdir igtl \
+    && cd igtl \
+    && git clone https://github.com/openigtlink/OpenIGTLink \
+    && mkdir OpenIGTLink-build \
+    && cd OpenIGTLink-build \
+    && cmake -DBUILD_SHARED_LIBS:BOOL=ON -DBUILD_EXAMPLES:BOOL=ON ../OpenIGTLink \
+    && make
