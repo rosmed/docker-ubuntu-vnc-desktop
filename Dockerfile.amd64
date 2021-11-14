@@ -141,5 +141,45 @@ RUN mkdir igtl \
     && git clone https://github.com/openigtlink/OpenIGTLink \
     && mkdir OpenIGTLink-build \
     && cd OpenIGTLink-build \
-    && cmake -DBUILD_SHARED_LIBS:BOOL=ON -DBUILD_EXAMPLES:BOOL=ON ../OpenIGTLink \
+    && cmake -DBUILD_SHARED_LIBS:BOOL=OFF -DBUILD_EXAMPLES:BOOL=ON ../OpenIGTLink \
     && make
+
+RUN apt-get update \
+    && apt install -y python3-colcon-common-extensions python3-vcstool \
+    && mkdir -p /root/workspace/ros_ur_driver/src \
+    && cd /root/workspace/ros_ur_driver \
+    && git clone https://github.com/simonleonard/Universal_Robots_ROS2_Driver.git src/Universal_Robots_ROS2_Driver
+
+#
+# NOTES: The following colcon build process may fail due to memory shortage.
+#    If it fails, consider increasing the memory size assigned to the Docker image, and
+#    limiting the number of processes using the '--parallel-workers' option.
+#
+
+RUN cd /root/workspace/ros_ur_driver \
+    && rosdep update \
+    && vcs import src --skip-existing --input src/Universal_Robots_ROS2_Driver/Universal_Robots_ROS2_Driver.repos \
+    && rosdep install --ignore-src --from-paths src -y -r
+
+RUN cd /root/workspace/ros_ur_driver \
+    && /bin/bash -c 'source /opt/ros/foxy/setup.sh; colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release'
+
+RUN cd /root/workspace/ros_ur_driver \
+    && rosdep update \
+    && vcs import src --skip-existing --input src/Universal_Robots_ROS2_Driver/MoveIt_Support.repos \ 
+    && vcs import src --skip-existing --input src/moveit2/moveit2.repos \
+    && rosdep install --ignore-src --from-paths src -y -r
+    
+RUN cd /root/workspace/ros_ur_driver \    
+    && /bin/bash -c 'source /opt/ros/foxy/setup.sh; colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_TYPE=Release'
+
+
+#
+# NOTES: The following colcon build process fails if '--parallel-workers 2' is not specified.
+#
+
+RUN cd  /root/workspace/ros_ur_driver \
+    && rosdep update \
+    && git clone -b ismr21 https://github.com/openigtlink/ros2_igtl_bridge  src/ros2_igtl_bridge\
+    && rosdep install --ignore-src --from-paths src -y -r \
+    && /bin/bash -c 'source /opt/ros/foxy/setup.sh; colcon build --parallel-workers 2 --cmake-args -DOpenIGTLink_DIR:PATH=/root/igtl/OpenIGTLink-build -DCMAKE_BUILD_TYPE=Release'
