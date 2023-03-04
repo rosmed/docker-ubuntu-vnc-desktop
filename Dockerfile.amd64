@@ -161,9 +161,24 @@ RUN mkdir /root/slicer \
     && git clone --branch v5.2.2 https://github.com/slicer/Slicer \
     && mkdir Slicer-SuperBuild-Release \
     && cd Slicer-SuperBuild-Release \
-    && cmake -DCMAKE_BUILD_TYPE:STRING=Release ../Slicer \
+    && cmake -DCMAKE_BUILD_TYPE:STRING=Release -DSlicer_USE_SYSTEM_OpenSSL=ON ../Slicer \
     && make -j4
 
+#
+# Prerequisite for SlicerROS2
+#
+RUN apt update \
+    && apt install -y ~nros-foxy-rqt* \
+    && apt install -y ros-foxy-turtlesim
+
+#
+# Build SlicerROS2
+#
+WORKDIR /root
+RUN mkdir -p /root/ros2_ws \
+    && git clone https://github.com/rosmed/slicer_ros2_module /root/ros2_ws/src/slicer_ros2_module \
+    && cd /root/ros2_ws \
+    && /bin/bash -c 'source /opt/ros/foxy/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build'
 
 #RUN apt-get update \
 #    && apt install -y python3-colcon-common-extensions python3-vcstool \
