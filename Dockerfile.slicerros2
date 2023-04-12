@@ -1,0 +1,33 @@
+# Built with arch: amd64 flavor: lxde image: ubuntu:20.04
+#
+################################################################################
+# base system
+################################################################################
+
+
+#FROM ubuntu:20.04 as system
+#FROM ros:foxy-ros-base as system
+#FROM ros:galactic-ros-base as system
+FROM rosmed/docker-ubuntu-vnc-desktop-slicer:ismr2023 as system
+
+#
+# Build SlicerROS2
+#
+WORKDIR /root
+
+#
+# Prerequisite for SlicerROS2
+#
+RUN apt update \
+    && apt install -y ~nros-galactic-rqt* \
+    && apt install -y ros-galactic-turtlesim
+
+#
+# Build SlicerROS2
+#
+WORKDIR /root
+RUN mkdir -p /root/ros2_ws \
+    && git clone https://github.com/rosmed/slicer_ros2_module /root/ros2_ws/src/slicer_ros2_module \
+    && cd /root/ros2_ws \
+    && /bin/bash -c 'source /opt/ros/galactic/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build'
+
