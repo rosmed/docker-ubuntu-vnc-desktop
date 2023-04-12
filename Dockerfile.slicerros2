@@ -26,8 +26,10 @@ RUN apt update \
 # Build SlicerROS2
 #
 WORKDIR /root
-RUN mkdir -p /root/ros2_ws \
-    && git clone https://github.com/rosmed/slicer_ros2_module /root/ros2_ws/src/slicer_ros2_module \
+RUN mkdir -p /root/ros2_ws/src \
+    && mkdir -p /opt/ros2_ws/src \
+    && cd /root/ros2_ws/src \
+    && git clone https://github.com/jhu-cisst/ros2_cisst_msgs.git cisst_msgs \
+    && git clone -b devel https://github.com/rosmed/slicer_ros2_module \
     && cd /root/ros2_ws \
     && /bin/bash -c 'source /opt/ros/galactic/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build'
-

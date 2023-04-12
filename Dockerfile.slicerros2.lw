@@ -1,0 +1,37 @@
+#
+# Copy package files under packages/ and ros2_ws.tar.gz to the current directory before running this script.
+#
+
+################################################################################
+# base system
+################################################################################
+
+FROM rosmed/docker-ubuntu-vnc-desktop-base:ismr2023 as system
+
+#
+# Build SlicerROS2
+#
+WORKDIR /root
+
+#
+# Copy 3D Silcer
+#
+
+WORKDIR /root
+RUN mkdir -p /root/slicer/packages
+COPY packages/* /root/slicer/packages
+RUN tar zxvf /root/slicer/packages/Slicer*.tar.gz -C /root/slicer \
+    && /bin/bash -c 'rm `find /root/slicer/packages/Slicer*.tar.gz`' \
+    && /bin/bash -c 'mv `find /root/slicer/Slicer* -maxdepth 0` /root/slicer/Slicer-5.2'
+
+COPY ros2_ws.tar.gz /root/
+RUN cd /root \
+    && tar zxvf ros2_ws.tar.gz \
+    && rm ros2_ws.tar.gz
+
+#
+# Install 3D Slicer Extensions
+#
+
+COPY slicer/install-extension.py /tmp
+RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /tmp/install-extension.py /root/slicer/packages" \
