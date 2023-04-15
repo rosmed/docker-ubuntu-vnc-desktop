@@ -16,13 +16,6 @@ FROM rosmed/docker-ubuntu-vnc-desktop-slicer:ismr2023 as system
 WORKDIR /root
 
 #
-# Prerequisite for SlicerROS2
-#
-RUN apt update \
-    && apt install -y ~nros-galactic-rqt* \
-    && apt install -y ros-galactic-turtlesim
-
-#
 # Build SlicerROS2
 #
 WORKDIR /root
@@ -30,6 +23,53 @@ RUN mkdir -p /root/ros2_ws/src \
     && mkdir -p /opt/ros2_ws/src \
     && cd /root/ros2_ws/src \
     && git clone https://github.com/jhu-cisst/ros2_cisst_msgs.git cisst_msgs \
-    && git clone -b devel https://github.com/rosmed/slicer_ros2_module \
+    && git clone https://github.com/jhu-saw/ros2_sensable_omni_model \
+    && git clone https://github.com/rosmed/slicer_ros2_module \
     && cd /root/ros2_ws \
     && /bin/bash -c 'source /opt/ros/galactic/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build'
+
+
+#
+# Install 3D Slicer Extensions
+#
+
+COPY slicer/install-extension.py /root/slicer
+COPY slicer/install-module.py /root/slicer
+COPY slicer/start-slicer-ros2.bash /root
+COPY slicer/install-segmentation-unet.bash /root
+WORKDIR /root
+RUN cd /root \
+    && chmod 755 start-slicer-ros2.bash \
+    && chmod 755 install-segmentation-unet.bash
+
+RUN rm /root/slicer/packages/Slicer*.tar.gz
+RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-extension.py" \
+
+#
+# Install 3D Slicer Modules
+#
+
+# SlicerROS2
+WORKING /root
+RUN /bin/bash -c "export MODULE_DIR=/root/ros2_ws/build/ROS2/lib/Slicer-5.2/qt-loadable-modules; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
+
+# Trajectory Tracing
+WORKDIR /root
+RUN cd /root/slicer/modules \
+    && cd /root/slicer/modules \
+    && git clone https://github.com/rosmed/robot_trajectory_trace_SlicerROS2 \
+    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/robot_trajectory_trace_SlicerROS2/TrajectoryGenerator/RobotTrajectoryGenerator; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
+
+# AI-based Ultrasound Segmentation
+# This must be the last, because the module requires user interaction at the first launch.
+WORKDIR /root
+RUN cd /root/slicer/modules \
+    && cd /root/slicer/modules \
+    && mkdir aigt \
+    && cd aigt \
+    && git init \
+    && git config core.sparsecheckout true \
+    && echo 'SlicerExtension/LiveUltrasoundAi/SegmentationUNet*' > .git/info/sparse-checkout \
+    && git remote add -f origin https://github.com/SlicerIGT/aigt \
+    && git pull origin master \
+#    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/aigt/SlicerExtension/LiveUltrasoundAi/SegmentationUNet; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /tmp/install-module.py"

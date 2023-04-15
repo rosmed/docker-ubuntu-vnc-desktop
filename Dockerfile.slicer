@@ -77,7 +77,6 @@ RUN mkdir -p /root/slicer/modules \
     && mkdir -p /root/slicer/packages \
     && mv *.tar.gz /root/slicer/packages
 
-
 #
 # Parallel Processing
 #
@@ -91,33 +90,3 @@ RUN mkdir -p /root/slicer/modules \
     && make package \
     && mkdir -p /root/slicer/packages \
     && mv *.tar.gz /root/slicer/packages
-
-
-#
-# AI-based Ultrasound Segmentation
-#
-RUN mkdir -p /root/slicer/modules \
-    && cd /root/slicer/modules \
-    && mkdir aigt \
-    && cd aigt \
-    && git init \
-    && git config core.sparsecheckout true \
-    && echo 'SlicerExtension/LiveUltrasoundAi/SegmentationUNet*' > .git/info/sparse-checkout \
-    && git remote add -f origin https://github.com/SlicerIGT/aigt \
-    && git pull origin master \
-    && mv SlicerExtension/LiveUltrasoundAi/SegmentationUNet . \
-    && rm -rf SlicerExtension
-   # && cd .. \
-   # && mkdir SegmentationUNet-build \
-   # && cd SegmentationUNet-build \
-   # && cmake -DCMAKE_BUILD_TYPE:STRING=Release -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build ../aigt/SlicerExtension/LiveUltrasoundAi/SegmentationUNet \
-   # && make package \
-   # && mkdir -p /root/slicer/packages \
-   # && mv *.tar.gz /root/slicer/packages
-
-#
-# Trajectory Tracing
-#
-RUN mkdir -p /root/slicer/modules \
-    && cd /root/slicer/modules \
-    && git clone https://github.com/rosmed/robot_trajectory_trace_SlicerROS2

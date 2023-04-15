@@ -146,3 +146,10 @@ RUN apt update \
     && apt install -y qtbase5-private-dev libqt5x11extras5-dev \
     && apt install -y libxt-dev libssl-dev
 
+
+#
+# Prerequisite for SlicerROS2
+#
+RUN apt update \
+    && apt install -y ~nros-galactic-rqt* \
+    && apt install -y ros-galactic-turtlesim

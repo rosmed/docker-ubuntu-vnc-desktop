@@ -9,11 +9,6 @@
 FROM rosmed/docker-ubuntu-vnc-desktop-base:ismr2023 as system
 
 #
-# Build SlicerROS2
-#
-WORKDIR /root
-
-#
 # Copy 3D Silcer
 #
 
@@ -33,5 +28,42 @@ RUN cd /root \
 # Install 3D Slicer Extensions
 #
 
-COPY slicer/install-extension.py /tmp
-RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /tmp/install-extension.py /root/slicer/packages" \
+COPY slicer/install-extension.py /root/slicer
+COPY slicer/install-module.py /root/slicer
+COPY slicer/start-slicer-ros2.bash /root
+COPY slicer/install-segmentation-unet.bash /root
+WORKDIR /root
+RUN cd /root \
+    && chmod 755 start-slicer-ros2.bash \
+    && chmod 755 install-segmentation-unet.bash
+
+RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /root/slicer/install-extension.py" \
+
+#
+# Install 3D Slicer Modules
+#
+
+# SlicerROS2
+WORKING /root
+RUN /bin/bash -c "export MODULE_DIR=/root/ros2_ws/build/ROS2/lib/Slicer-5.2/qt-loadable-modules; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
+
+# Trajectory Tracing
+WORKDIR /root
+RUN mkdir -p /root/slicer/modules \
+    && cd /root/slicer/modules \
+    && git clone https://github.com/rosmed/robot_trajectory_trace_SlicerROS2 \
+    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/robot_trajectory_trace_SlicerROS2/TrajectoryGenerator/RobotTrajectoryGenerator; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
+
+# AI-based Ultrasound Segmentation
+# This must be the last, because the module requires user interaction at the first launch.
+WORKDIR /root
+RUN mkdir -p /root/slicer/modules \
+    && cd /root/slicer/modules \
+    && mkdir aigt \
+    && cd aigt \
+    && git init \
+    && git config core.sparsecheckout true \
+    && echo 'SlicerExtension/LiveUltrasoundAi/SegmentationUNet*' > .git/info/sparse-checkout \
+    && git remote add -f origin https://github.com/SlicerIGT/aigt \
+    && git pull origin master \
+#    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/aigt/SlicerExtension/LiveUltrasoundAi/SegmentationUNet; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
