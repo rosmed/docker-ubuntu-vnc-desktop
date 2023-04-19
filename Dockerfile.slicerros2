@@ -10,6 +10,23 @@
 #FROM ros:galactic-ros-base as system
 FROM rosmed/docker-ubuntu-vnc-desktop-slicer:ismr2023 as system
 
+
+#
+# Additional ROS2 packages (dVRK)
+#
+
+WORKDIR /root
+RUN apt install -y python3-vcstool python3-colcon-common-extensions \
+    && apt install -y python3-pykdl \
+    && apt install -y libxml2-dev libraw1394-dev libncurses5-dev qtcreator swig sox espeak cmake-curses-gui cmake-qt-gui git subversion gfortran libcppunit-dev libqt5xmlpatterns5-dev libbluetooth-dev \
+    && apt install -y ros-galactic-joint-state-publisher* ros-galactic-xacro
+
+WORKDIR /root
+RUN mkdir -p /root/ros2_ws/src \
+    && cd /root/ros2_ws/src \
+    && /bin/bash -c 'source /opt/ros/galactic/setup.sh; vcs import --input https://raw.githubusercontent.com/jhu-dvrk/dvrk_robot_ros2/main/dvrk.vcs --recursive'
+
+
 #
 # Build SlicerROS2
 #
@@ -20,19 +37,18 @@ WORKDIR /root
 #
 WORKDIR /root
 RUN mkdir -p /root/ros2_ws/src \
-    && mkdir -p /opt/ros2_ws/src \
+    && mkdir -p /root/ros2_ws/src \
     && cd /root/ros2_ws/src \
-    && git clone https://github.com/jhu-cisst/ros2_cisst_msgs.git cisst_msgs \
+    #&& git clone https://github.com/jhu-cisst/ros2_cisst_msgs.git cisst_msgs \ # Installed as part of dVRK/ciasst
     && git clone https://github.com/jhu-saw/ros2_sensable_omni_model \
     && git clone https://github.com/rosmed/slicer_ros2_module \
     && cd /root/ros2_ws \
-    && /bin/bash -c 'source /opt/ros/galactic/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build'
-
+    && /bin/bash -c 'source /opt/ros/galactic/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build -DCMAKE_BUILD_TYPE=Release'
 
 #
 # Install 3D Slicer Extensions
 #
-
+WORKDIR /root
 COPY slicer/install-extension.py /root/slicer
 COPY slicer/install-module.py /root/slicer
 COPY slicer/start-slicer-ros2.bash /root
