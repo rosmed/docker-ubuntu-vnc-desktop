@@ -83,6 +83,12 @@ RUN mkdir -p /root/slicer/modules \
     && git config core.sparsecheckout true \
     && echo 'SlicerExtension/LiveUltrasoundAi/SegmentationUNet*' > .git/info/sparse-checkout \
     && git remote add -f origin https://github.com/SlicerIGT/aigt \
-    && git pull origin master \
+    && git pull origin master
 #    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/aigt/SlicerExtension/LiveUltrasoundAi/SegmentationUNet; xvfb-run --auto-servernum /root/slicer/Slicer-5.2/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
 
+
+
+# ISMR Tutorial Data
+WORKDIR /root
+RUN cd /root \
+    && git clone https://github.com/rosmed/ismr2023_files

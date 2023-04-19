@@ -79,7 +79,7 @@ In this example, the container ID is `6d10162752a4` Then copy the binary files f
 
 ~~~~
 docker cp 64895f315348:/root/ros2_ws .
-tar czvf ros_ws.tar.gz ros_ws
+tar czvf ros2_ws.tar.gz ros2_ws
 ~~~~
 
 
